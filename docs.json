@@ -1,0 +1,93 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "IncoPay",
+  "description": "Private X402 payments on Solana with Inco Lightning and Kora",
+  "colors": {
+    "primary": "#2463EB",
+    "light": "#60A5FA",
+    "dark": "#1E3A8A"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "quickstart",
+              "pricing"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/problem",
+              "concepts/solution",
+              "concepts/architecture",
+              "concepts/tech-stack"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": ["reference/facilitator-api"]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "More",
+            "pages": [
+              "development"
+            ]
+          },
+          {
+            "group": "Mintlify",
+            "pages": [
+              "essentials/navigation",
+              "essentials/markdown",
+              "essentials/code",
+              "essentials/images",
+              "essentials/reusable-snippets",
+              "essentials/settings"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": []
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/ayushsingh82/IncoPay"
+      },
+      {
+        "label": "Inco Network",
+        "href": "https://inco.org"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Quickstart",
+      "href": "/quickstart"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/ayushsingh82/IncoPay"
+    }
+  }
+}

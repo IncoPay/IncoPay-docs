@@ -1,0 +1,33 @@
+---
+title: "Tech stack"
+description: "Libraries and services used by IncoPay (my-app)"
+---
+
+## Frontend
+
+- **Next.js 16** (React 19)  
+- **Solana Wallet Adapter** (`@solana/wallet-adapter-*`)  
+- **Anchor** (`@coral-xyz/anchor`) for IDL-driven program calls  
+- **`@inco/solana-sdk`** — encryption / utilities used in the flow  
+- **`@x402/core`**, **`@x402/svm`** — X402 payment semantics  
+
+## Facilitator
+
+- **Express** — HTTP API (`/getAmount`, `/verify`, `/settle`, `/supported`, `/health`)  
+- **`@solana/kora`** — Kora client (local SDK path when developing with sibling `kora` repo; see README for Vercel UI-only builds)  
+- **`@solana/web3.js`**, **Anchor** — Transaction building and program interaction  
+
+## On-chain (devnet)
+
+- **IncoToken** — Anchor program (confidential SPL-style transfer with authorization)  
+- **Inco Lightning** — External program + `inco-lightning` Rust crate (CPI from IncoToken)  
+
+## Fee payer
+
+- **Kora** — Rust service + TypeScript SDK; sign-and-send with allowlisted programs and `sig_verify: false` for partially signed txs (IncoPay fork behavior)
+
+## Related repositories
+
+- **IncoPay app:** [github.com/ayushsingh82/IncoPay](https://github.com/ayushsingh82/IncoPay)  
+- **Kora + facilitator fork:** [github.com/ayushsingh82/IncoPay-KoraFacilator](https://github.com/ayushsingh82/IncoPay-KoraFacilator)  
+- **Inco Network:** [inco.org](https://inco.org)  

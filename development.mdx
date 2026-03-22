@@ -1,0 +1,54 @@
+---
+title: "Development"
+description: "Preview IncoPay docs locally with Mintlify"
+---
+
+<Info>
+  **Prerequisites**: Node.js 19+ and this `incopay-docs` folder with `docs.json`.
+</Info>
+
+## Preview docs locally
+
+<Steps>
+  <Step title="Install Mintlify CLI">
+
+```bash
+npm i -g mint
+```
+
+  </Step>
+  <Step title="Run the dev server">
+
+From the **`incopay-docs`** directory (where `docs.json` lives):
+
+```bash
+cd incopay-docs
+mint dev
+```
+
+Open **http://localhost:3000** to view the docs. MDX changes hot-reload.
+
+  </Step>
+</Steps>
+
+## Custom port
+
+```bash
+mint dev --port 3333
+```
+
+## Validate links
+
+```bash
+mint broken-links
+```
+
+## Working on the IncoPay app (`my-app/`)
+
+These docs describe **IncoPay** (private X402 on Solana). The application code lives in **`my-app/`** next to this folder in the monorepo:
+
+1. Open **`my-app/`** in your editor.
+2. Follow the [Quickstart](/quickstart) for install, `.env`, and running Kora + facilitator + Next.js.
+3. See the main repo **README** in `my-app/README.md` for program IDs, troubleshooting, and Vercel UI-only deploy notes.
+
+For Mintlify theme and navigation, see [Mintlify documentation](https://mintlify.com/docs).
