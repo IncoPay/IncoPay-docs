@@ -1,0 +1,16 @@
+---
+title: "Problem"
+description: "Public payments, gas friction, and the need for confidential amounts on Solana"
+---
+
+Most token transfers on Solana are **public**: observers can see who paid whom and often infer amounts. That is a poor fit for **premium content**, **private commerce**, or **X402-style** “pay to unlock” flows where you want **confidentiality** for the payment leg.
+
+Users also face **gas friction**: every transaction needs SOL for fees. That hurts onboarding and makes “one-click pay” harder, especially for apps that want a **facilitator-paid** model (merchant or protocol sponsors gas).
+
+**X402** on the web encodes “payment required” semantics; bringing **private** payments to Solana means combining:
+
+- **Confidential SPL** (encrypted amounts / balances) via Inco Lightning  
+- **Clear authorization** (who agreed to pay what) without leaking cleartext amounts on-chain where the design intends confidentiality  
+- **A fee payer** so the user does not spend SOL for network fees  
+
+IncoPay targets this gap: **private X402 on Solana** with Inco Network tooling and Kora as fee payer.

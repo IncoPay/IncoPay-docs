@@ -1,0 +1,42 @@
+---
+title: "Deployment"
+description: "How to run IncoPay: local full stack, UI-only on Vercel, and facilitator elsewhere"
+---
+
+IncoPay is **open source**—there are no product “tiers” in the app repo. This page describes **how you deploy** the pieces.
+
+## Local full stack (recommended for demos)
+
+Run everything on your machine:
+
+- **Kora** — `yarn kora:start` (port 8080)  
+- **Facilitator** — `yarn facilitator` (port 3001)  
+- **Next.js** — `yarn dev` (port 3000)  
+
+You need a built **`@solana/kora`** SDK when using the local `file:../kora/sdks/ts` workflow (see `my-app/README.md`).
+
+**Best for:** hacking, end-to-end Pay 1 INCO on devnet, testing Kora allowlists and IncoToken.
+
+## Vercel (UI only)
+
+The **`my-app`** build is set up so **Vercel can deploy the Next.js UI** without the Kora repo on the build machine: **`@solana/kora`** is not installed from a missing `file:` path; a **type stub** satisfies the TypeScript build.
+
+**Best for:** public landing + wallet UI.  
+**Note:** The **facilitator** must run **elsewhere** (another host, Railway, Fly, etc.) and `NEXT_PUBLIC_FACILITATOR_URL` must point to it.
+
+## Facilitator + Kora on a server
+
+For production-like setups:
+
+- Run **Kora** and the **facilitator** on a server (or two) with proper **secrets** (`KORA_PRIVATE_KEY`, API keys).  
+- Point the frontend’s **`NEXT_PUBLIC_FACILITATOR_URL`** at your facilitator URL.  
+- Lock down CORS and rate limits as needed.
+
+## Open source
+
+- **IncoPay** — app and docs in the monorepo  
+- **IncoPay-KoraFacilator** — Kora/facilitator fork for IncoPay-specific changes  
+
+<Note>
+  For detailed env vars and scripts, use the [Quickstart](/quickstart) and `my-app/README.md`.
+</Note>

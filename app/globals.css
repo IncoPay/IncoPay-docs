@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Manual toggle: match html.dark and data-theme (ThemeProvider sets both; not prefers-color-scheme). */
+@custom-variant dark (&:where(.dark, .dark *, [data-theme=dark], [data-theme=dark] *));
+
+@plugin "@tailwindcss/typography";
+
+@source "../components/**/*.tsx";
+@source "../app/**/*.tsx";
+
+/* Prose for MDX article (Mintlify-style readability) */
+.docs-article {
+  @apply prose prose-zinc max-w-none dark:prose-invert;
+  @apply prose-headings:font-semibold prose-headings:tracking-tight;
+  @apply prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline dark:prose-a:text-blue-400;
+  @apply prose-code:text-sm prose-pre:p-0 prose-pre:bg-transparent;
+}
+
+/* Mintlify CodeBlock replaces pre; hide empty prose pre wrappers if any */
+.docs-article pre:empty {
+  display: none;
+}

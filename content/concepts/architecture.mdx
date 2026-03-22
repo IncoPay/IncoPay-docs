@@ -1,0 +1,37 @@
+---
+title: "Architecture"
+description: "End-to-end flow: Next.js, facilitator, Kora, IncoToken, Inco Lightning"
+---
+
+## End-to-end flow
+
+1. **Browser (Next.js)** — User opens `/started` (or similar), connects wallet.  
+2. **`POST /getAmount`** — Facilitator returns **ciphertext** for the demo price.  
+3. **Sign message** — Client builds payload (ciphertext, amount, recipient, nonce, …) and calls `signMessage`.  
+4. **`POST /verify`** — Facilitator checks Ed25519 signature and x402-style payload.  
+5. **Simulation / handles** — Client may simulate IncoToken transfer to obtain handles (see app code).  
+6. **`POST /settle` (step 1)** — Facilitator returns **`requiresPayerSignature: true`** and **`unsignedTransaction`** (base64).  
+7. **Sign transaction** — User signs once; client serializes with **`requireAllSignatures: false`** / **`verifySignatures: false`** (fee payer not signed yet).  
+8. **`POST /settle` (step 2)** — Client sends signed tx; facilitator calls **Kora** `signAndSendTransaction`.  
+9. **Kora** — Adds fee-payer signature, submits to Solana; client shows **Solscan** link.
+
+## Components
+
+| Layer | Role |
+|-------|------|
+| **Next.js app** | UI, wallet adapter, calls facilitator + builds/signed txs |
+| **Facilitator (Express)** | Ciphertext, verify, build unsigned tx, proxy to Kora |
+| **Kora** | Fee payer RPC, partially signed tx handling |
+| **IncoToken (Anchor)** | `transfer_with_authorization`, Ed25519 relative index |
+| **Inco Lightning** | Confidential SPL / FHE CPIs from IncoToken |
+
+## Devnet program IDs (reference)
+
+Use these in Kora **`allowed_programs`** (or equivalent):
+
+- `ComputeBudget111111111111111111111111111111` — Compute Budget  
+- `9Cir3JKBcQ1mzasrQNKWMiGVZvYu3dxvfkGeQ6mohWWi` — IncoToken  
+- `5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj` — Inco Lightning  
+- `Ed25519SigVerify111111111111111111111111111` — Ed25519 verify  
+
+See `my-app/README.md` in the repo for the full table and troubleshooting.

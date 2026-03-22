@@ -1,0 +1,28 @@
+---
+title: "Solution"
+description: "IncoPay: confidential SPL, ciphertext-aware facilitator, and Kora for gasless submission"
+---
+
+IncoPay combines **Inco Lightning** (confidential SPL), an **Express facilitator** that understands **ciphertext** end-to-end, and **Kora** **only** as **fee payer + transaction submission**—not for generating or verifying ciphertext.
+
+## What the user experiences
+
+- Connect a Solana wallet (devnet in the demo).  
+- **Pay 1 INCO** (or your configured amount): sign a **message** (authorization including ciphertext metadata), then sign the **transaction** once.  
+- **No gas** from the user: Kora adds the fee-payer signature and submits.  
+- **Confidential transfer path** uses IncoToken + Inco Lightning; amounts stay confidential through the facilitator pipeline until settlement semantics you define.
+
+## What the facilitator does
+
+- **`/getAmount`** — Returns **ciphertext** for the priced amount.  
+- **`/verify`** — Validates the user’s **Ed25519** signature over the payment message (ciphertext, amount, recipient, etc.).  
+- **`/settle`** — **Two steps**: (1) return an **unsigned** transaction for the user to sign; (2) accept the **signed** transaction and forward to **Kora** for fee-payer signature and send.
+
+## What Kora does (IncoPay scope)
+
+- Pays **network fees** and completes **sign-and-send** for partially signed transactions (`sig_verify: false` where configured so the fee payer can sign last).  
+- Must **allowlist** programs used in the tx (Ed25519, Compute Budget, IncoToken, Inco Lightning) — see [Tech stack](/concepts/tech-stack).
+
+## On-chain tie-in
+
+**IncoToken** `transfer_with_authorization` checks **Ed25519** verification in the **previous** instruction (relative index), then performs the confidential transfer path (Inco Lightning CPIs per program version).

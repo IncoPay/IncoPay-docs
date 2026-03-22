@@ -1,0 +1,81 @@
+---
+title: "Introduction"
+description: "Private X402 payments on Solana with Inco Network, Inco Lightning, and Kora"
+---
+
+## What is IncoPay?
+
+**IncoPay** is **private X402 on Solana**: confidential SPL token transfers with message-based authorization and **gasless** submission via **Kora** as fee payer. It is powered by [Inco Network](https://inco.org) and the **Inco Lightning** program for encrypted amounts and confidential transfers.
+
+We built **private X402 on Solana** using **Inco Network**. The stack uses the **Inco Lightning** program for confidential SPL token transfers and **Kora** only as the facilitator service—fee payer and transaction submission—so users get a gasless, one-sign flow.
+
+On the **facilitator** we added full support for ciphertext and the payment lifecycle: **getAmount** returns an encrypted amount (ciphertext) for the transfer; **verify** validates the user’s Ed25519 signature over the payment message (ciphertext, amount, recipient); and **settle** runs in two steps—it first returns an unsigned transaction for the user to sign once, then accepts the signed transaction and forwards it to Kora for fee-payer signature and submission. Ciphertext is read and passed through the whole flow so amounts stay confidential until settlement; Kora is used only for paying fees and sending the transaction, not for generating or verifying ciphertext.
+
+On-chain, the flow uses Ed25519 signature verification and the IncoToken program’s **transfer_with_authorization** so the confidential transfer is tied to the signed message.
+
+<Card
+  title="Quickstart"
+  icon="rocket"
+  href="/quickstart"
+  horizontal
+>
+  Run the Next.js app, facilitator, and Kora locally (devnet).
+</Card>
+
+## How it works (high level)
+
+1. User connects a Solana wallet and requests a payment (e.g. Pay 1 INCO on `/started`).
+2. **Facilitator** returns **ciphertext** for the amount (`/getAmount`).
+3. User **signs a message** authorizing the payment; facilitator **verifies** the signature (`/verify`).
+4. Facilitator builds an **unsigned** transaction; user **signs the transaction** once.
+5. **Kora** adds the fee-payer signature and **submits** the transaction—user pays **no gas**.
+
+## Main pages
+
+<Columns cols={2}>
+  <Card
+    title="Problem"
+    icon="shield-exclamation"
+    href="/concepts/problem"
+  >
+    Why public payments and gas friction matter—and what IncoPay changes.
+  </Card>
+  <Card
+    title="Solution"
+    icon="sparkles"
+    href="/concepts/solution"
+  >
+    Confidential SPL + X402-style flow + Kora fee payer.
+  </Card>
+  <Card
+    title="Architecture"
+    icon="diagram-project"
+    href="/concepts/architecture"
+  >
+    Frontend, facilitator, Kora, IncoToken, and Inco Lightning on devnet.
+  </Card>
+  <Card
+    title="Tech stack"
+    icon="code"
+    href="/concepts/tech-stack"
+  >
+    Next.js, Express, Anchor, `@inco/solana-sdk`, `@x402`, Kora.
+  </Card>
+</Columns>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Clone `my-app`, configure `.env`, run three terminals (Kora, facilitator, Next.js).
+  </Card>
+  <Card title="Facilitator API" icon="brackets-curly" href="/reference/facilitator-api">
+    `getAmount`, `verify`, `settle`, and `/supported`.
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/pricing">
+    Local full stack vs Vercel UI-only vs facilitator elsewhere.
+  </Card>
+  <Card title="Kora + Facilitator fork" icon="github" href="https://github.com/ayushsingh82/IncoPay-KoraFacilator">
+    IncoPay-specific Kora and facilitator changes.
+  </Card>
+</CardGroup>

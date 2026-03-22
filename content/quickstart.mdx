@@ -1,0 +1,75 @@
+---
+title: "Quickstart"
+description: "Run IncoPay locally: Next.js, facilitator, and Kora on Solana devnet"
+---
+
+## Prerequisites
+
+- **Node.js** 18+ and **Yarn** (or npm)
+- **Rust** and **Cargo** (for Kora)
+- **Solana CLI** and **Anchor** (optional; for building/deploying IncoToken)
+- **Kora** repo as a sibling to `my-app` (e.g. `../kora`) if you run the facilitator with the real `@solana/kora` SDK — see [Deployment](/pricing)
+
+## Step 1: Clone and install
+
+The app lives under **`my-app`** in the [IncoPay](https://github.com/ayushsingh82/IncoPay) repository.
+
+```bash
+cd my-app
+yarn install
+```
+
+If the facilitator needs the Kora TypeScript SDK from a local path, build it:
+
+```bash
+yarn kora:build-sdk
+```
+
+(Requires `../kora/sdks/ts` and a built SDK — see repo README.)
+
+## Step 2: Environment (`.env` or `.env.local`)
+
+Create **`my-app/.env`** or **`my-app/.env.local`** (Next.js loads both; `.env.local` overrides `.env`). You can copy from an existing `.env.local` template.
+
+**Required for the full stack:**
+
+| Variable | Purpose |
+|----------|---------|
+| `KORA_PRIVATE_KEY` | Fee-payer keypair for `yarn kora:start` |
+| `NEXT_PUBLIC_TOKEN_MINT` | IncoToken mint on devnet |
+| `NEXT_PUBLIC_PAYMENT_RECEIVER` | Receiver wallet for demo payment |
+| `NEXT_PUBLIC_FACILITATOR_URL` | e.g. `http://localhost:3001` |
+| `FACILITATOR_PORT` | e.g. `3001` |
+| `KORA_RPC_URL` | e.g. `http://localhost:8080/` |
+| `KORA_API_KEY` | e.g. `kora_facilitator_api_key_example` (local) |
+
+Optional: `RPC_URL` for facilitator blockhash if Kora is unavailable.
+
+## Step 3: Run three terminals
+
+From **`my-app`**:
+
+| Terminal | Command | Port |
+|----------|---------|------|
+| 1 | `yarn kora:start` | 8080 |
+| 2 | `yarn facilitator` | 3001 |
+| 3 | `yarn dev` | 3000 |
+
+## Step 4: Try the demo
+
+- **Home:** [http://localhost:3000](http://localhost:3000)
+- **Pay 1 INCO:** [http://localhost:3000/started](http://localhost:3000/started)
+
+Connect a devnet wallet with IncoToken balance, then follow: sign message → sign transaction once → Solscan link when settled.
+
+## Summary
+
+- **Frontend** — Next.js 16, wallet adapter, `/started` flow  
+- **Facilitator** — Express: `/getAmount`, `/verify`, `/settle`  
+- **Kora** — Fee payer + `signAndSendTransaction` with partially signed txs  
+
+## Next steps
+
+- [Problem](/concepts/problem) — why private, gasless X402 on Solana  
+- [Architecture](/concepts/architecture) — end-to-end flow  
+- [Facilitator API](/reference/facilitator-api) — HTTP endpoints  

@@ -1,0 +1,53 @@
+---
+title: "Facilitator API"
+description: "HTTP endpoints for ciphertext, verification, and settlement (IncoPay)"
+---
+
+The **facilitator** is an Express server in **`my-app/app/facilator/server.ts`**. Default base URL: **`http://localhost:3001`**.
+
+## Base URL
+
+Set **`NEXT_PUBLIC_FACILITATOR_URL`** in the Next.js app (e.g. `http://localhost:3001` for local dev).
+
+## Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Health check |
+| `/getAmount` | POST | Return **ciphertext** for a priced amount |
+| `/verify` | POST | Verify **Ed25519** signature over the payment message |
+| `/settle` | POST | Build unsigned tx → (after user signs) submit via **Kora** |
+| `/supported` | GET | Advertise supported x402-style payment schemes |
+
+## `/getAmount`
+
+**POST** JSON body typically includes **`amount`** and **`decimals`**.  
+Response includes **`ciphertext`** used in the signed message and settlement payload.
+
+## `/verify`
+
+**POST** body includes x402-style **`paymentPayload`** and **`paymentRequirements`**.  
+The facilitator checks the user’s signature over the message that binds **ciphertext**, amount, and recipient.
+
+## `/settle`
+
+**Two-step flow:**
+
+1. **First request** — Payload includes **authorization** (message, signature, payer, ciphertext, mint, handles, …).  
+   Response may include **`requiresPayerSignature: true`** and **`unsignedTransaction`** (base64).
+
+2. **Second request** — Client sends **`transaction`** (base64) after the user signs.  
+   Facilitator forwards to **Kora** `signAndSendTransaction` (with `sig_verify: false` for partially signed txs in the IncoPay setup).
+
+On success, response includes **`success: true`** and a **transaction** identifier or signature string for Solscan.
+
+## `/supported`
+
+**GET** — Returns supported networks/schemes and fee payer metadata when Kora is reachable.
+
+## Requirements
+
+- **Kora** running at **`KORA_RPC_URL`** (e.g. `http://localhost:8080/`) when settling.  
+- Env: **`KORA_PRIVATE_KEY`**, mint/receiver vars as documented in **`my-app/README.md`**.
+
+For request/response shapes, see **`app/facilator/server.ts`** and **`app/facilator/README.md`** in the repo.

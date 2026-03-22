@@ -1,0 +1,49 @@
+---
+title: "Development"
+description: "Preview IncoPay docs locally — Next.js (Vercel) or Mintlify CLI"
+---
+
+<Info>
+  **Prerequisites**: Node.js 18+ and the `incopay-docs` folder.
+</Info>
+
+## Preview on Vercel stack (recommended)
+
+This folder is a **Next.js** site. MDX lives in **`content/`**.
+
+```bash
+cd incopay-docs
+npm install
+npm run dev
+```
+
+Open **http://localhost:3333** — sidebar + same IncoPay pages as production on Vercel.
+
+## Deploy on Vercel
+
+1. Import the Git repo in Vercel.
+2. Set **Root Directory** to **`incopay-docs`**.
+3. Framework: **Next.js** (auto-detected). Build: `npm run build`, Output: default.
+4. Deploy.
+
+Environment variables are optional for static docs.
+
+## Preview with Mintlify (optional)
+
+If you use **`docs.json`** and the Mintlify CLI (e.g. for Mintlify Cloud):
+
+```bash
+npm i -g mint
+cd incopay-docs
+mint dev
+```
+
+Mintlify reads MDX from the repo paths configured in `docs.json` (not only `content/`). For **Vercel**, the source of truth for routes is **`content/`** + `app/docs/[[...slug]]`.
+
+## Working on the IncoPay app (`my-app/`)
+
+1. Open **`my-app/`** in your editor.
+2. Follow the [Quickstart](/docs/quickstart) for install, `.env`, and running Kora + facilitator + Next.js.
+3. See **`my-app/README.md`** for program IDs and troubleshooting.
+
+For Mintlify-only features, see [Mintlify documentation](https://mintlify.com/docs).
