@@ -14,7 +14,7 @@ function DocCard(props: MintCardProps) {
   if (href && href.startsWith("/") && !href.startsWith("/docs") && !href.startsWith("http")) {
     href = `/docs${href}`;
   }
-  return <MintCard {...props} href={href} />;
+  return <MintCard {...props} href={href} className={`dark:hover:!border-white/10 ${props.className || ""}`} />;
 }
 
 function CardGroup({ cols = 2, children }: { cols?: number; children?: ReactNode }) {

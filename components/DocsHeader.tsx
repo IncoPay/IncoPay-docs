@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "./ThemeProvider";
+import Link from "next/link";
 
 type Props = {
   onMenuClick: () => void;
@@ -9,9 +10,10 @@ type Props = {
 
 export function DocsHeader({ onMenuClick, menuOpen }: Props) {
   const { theme, toggle } = useTheme();
+  const logoSrc = "/logo/logo.png"; // Use absolute path starting with / for Next.js public files
 
   return (
-    <header className="sticky top-0 z-50 h-14 shrink-0 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/80">
+    <header className="sticky top-0 z-50 h-[60px] shrink-0 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-white/10 dark:bg-black/80">
       <div className="flex h-full items-center justify-between gap-3 px-4 lg:px-5">
         <div className="flex items-center gap-2">
           <button
@@ -25,20 +27,26 @@ export function DocsHeader({ onMenuClick, menuOpen }: Props) {
             <span className="block h-0.5 w-[18px] rounded-full bg-current" />
             <span className="block h-0.5 w-[18px] rounded-full bg-current" />
           </button>
-          <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">IncoPay documentation</span>
+          <Link href="/docs" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoSrc} alt="IncoPay" className="h-6 w-auto sm:h-7" />
+            <span className="hidden text-sm font-semibold tracking-tight text-zinc-900 dark:text-white sm:inline-block">
+              IncoPay
+            </span>
+          </Link>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 sm:gap-2">
           <a
-            href="https://github.com/ayushsingh82/IncoPay"
+            href="https://github.com/IncoPay"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="hidden sm:block rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
           >
             GitHub
           </a>
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 transition-colors hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
             onClick={toggle}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >

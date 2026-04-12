@@ -16,6 +16,16 @@
   @apply prose-code:text-sm prose-pre:p-0 prose-pre:bg-transparent;
 }
 
+/* Ensure structural links like Mintlify Cards do NOT inherit prose-a styles */
+.docs-article a.group.block {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.docs-article a.group.block * {
+  text-decoration: none !important;
+}
+
 /* Mintlify CodeBlock replaces pre; hide empty prose pre wrappers if any */
 .docs-article pre:empty {
   display: none;

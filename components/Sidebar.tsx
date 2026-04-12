@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "./ThemeProvider";
 
 const NAV: { group: string; links: { title: string; href: string }[] }[] = [
   {
@@ -34,15 +33,9 @@ const NAV: { group: string; links: { title: string; href: string }[] }[] = [
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { theme } = useTheme();
-  const logoSrc = theme === "dark" ? "/logo/dark.svg" : "/logo/light.svg";
 
   return (
     <div className="flex flex-col gap-1 px-4 py-6 lg:py-8">
-      <Link href="/docs" className="mb-6 flex items-center gap-2 px-2 hover:opacity-90" onClick={onNavigate}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoSrc} alt="IncoPay" className="h-8 w-auto max-w-[200px]" />
-      </Link>
       <nav className="flex flex-col gap-6" aria-label="Documentation">
         {NAV.map((section) => (
           <div key={section.group}>
@@ -58,10 +51,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                       href={l.href}
                       onClick={onNavigate}
                       className={[
-                        "block rounded-lg px-2 py-1.5 text-sm font-medium transition-colors",
+                        "block rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                         active
-                          ? "bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
-                          : "text-zinc-600 hover:bg-zinc-200/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/80 dark:hover:text-zinc-100",
+                          ? "bg-zinc-900 text-white dark:bg-white dark:text-black shadow-sm"
+                          : "text-zinc-600 hover:bg-zinc-100/80 hover:text-zinc-900 hover:translate-x-0.5 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white",
                       ].join(" ")}
                     >
                       {l.title}
@@ -77,12 +70,32 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <ul className="flex flex-col gap-0.5">
             <li>
               <a
-                href="https://github.com/ayushsingh82/IncoPay"
+                href="https://github.com/IncoPay"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg px-2 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-200/60 dark:text-zinc-400 dark:hover:bg-zinc-800/80"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-all duration-200 hover:translate-x-0.5 hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
               >
                 GitHub ↗
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://inco-pay.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-all duration-200 hover:translate-x-0.5 hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+              >
+                Website ↗
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://x.com/IncoPayment"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-all duration-200 hover:translate-x-0.5 hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+              >
+                Twitter ↗
               </a>
             </li>
           </ul>

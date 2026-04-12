@@ -14,17 +14,17 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
         {sidebarOpen ? (
           <button
             type="button"
-            className="fixed inset-0 top-14 z-40 bg-black/50 max-lg:block lg:hidden"
+            className="fixed inset-0 top-[60px] z-40 bg-black/50 max-lg:block lg:hidden"
             aria-label="Close menu"
             onClick={() => setSidebarOpen(false)}
           />
         ) : null}
         <aside
           className={[
-            "w-[280px] shrink-0 border-r border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900",
-            "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:top-14 max-lg:z-50 max-lg:-translate-x-full max-lg:overflow-y-auto max-lg:transition-transform",
+            "w-[280px] shrink-0 border-r border-zinc-200 bg-white dark:border-white/10 dark:bg-black",
+            "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:top-[60px] max-lg:z-50 max-lg:-translate-x-full max-lg:overflow-y-auto max-lg:transition-transform",
             sidebarOpen ? "max-lg:translate-x-0" : "",
-            "lg:sticky lg:top-14 lg:max-h-[calc(100vh-3.5rem)] lg:translate-x-0 lg:overflow-y-auto",
+            "lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px)] lg:translate-x-0 lg:overflow-y-auto",
           ].join(" ")}
         >
           <Sidebar onNavigate={() => setSidebarOpen(false)} />
