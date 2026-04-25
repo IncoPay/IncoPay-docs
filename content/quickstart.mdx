@@ -1,75 +1,50 @@
 ---
 title: "Quickstart"
-description: "Run IncoPay locally: Next.js, facilitator, and Kora on Solana devnet"
+description: "Run IncoPay locally against the hosted facilitator and the published SDK"
 ---
+
+The fastest path: clone IncoPay, install, and run the Next.js app. The hosted facilitator is already live on Railway and the SDK is on npm — you don't run Kora, the facilitator, or any infra locally.
 
 ## Prerequisites
 
 - **Node.js** 18+ and **Yarn** (or npm)
-- **Rust** and **Cargo** (for Kora)
-- **Solana CLI** and **Anchor** (optional; for building/deploying IncoToken)
-- **Kora** repo as a sibling to `my-app` (e.g. `../kora`) if you run the facilitator with the real `@solana/kora` SDK — see [Deployment](/pricing)
 
 ## Step 1: Clone and install
 
-The app lives under **`my-app`** in the [IncoPay](https://github.com/ayushsingh82/IncoPay) repository.
-
 ```bash
-cd my-app
+git clone https://github.com/IncoPay/IncoPay
+cd IncoPay
 yarn install
 ```
 
-If the facilitator needs the Kora TypeScript SDK from a local path, build it:
+The published [`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions) SDK installs as a regular dependency.
+
+## Step 2: Run the app
 
 ```bash
-yarn kora:build-sdk
+yarn dev
 ```
 
-(Requires `../kora/sdks/ts` and a built SDK — see repo README.)
+That's it. Open [http://localhost:3000](http://localhost:3000).
 
-## Step 2: Environment (`.env` or `.env.local`)
+The app comes pre-wired to the hosted facilitator at `https://inco-facilitator-production.up.railway.app` and the Inco-USDC mint on Solana devnet — no `.env.local` required for the demo path.
 
-Create **`my-app/.env`** or **`my-app/.env.local`** (Next.js loads both; `.env.local` overrides `.env`). You can copy from an existing `.env.local` template.
+## Step 3: Try the demo
 
-**Required for the full stack:**
+- **Home** — [http://localhost:3000](http://localhost:3000)
+- **Sessions chat** (sign-once, settle 0.5 USDC per message) — [http://localhost:3000/sessions](http://localhost:3000/sessions)
+- **Slot** (sign-once, settle 0.10 USDC per pull) — [http://localhost:3000/slot](http://localhost:3000/slot)
+- **Single payment** (Pay 1 USDC) — [http://localhost:3000/started](http://localhost:3000/started)
 
-| Variable | Purpose |
-|----------|---------|
-| `KORA_PRIVATE_KEY` | Fee-payer keypair for `yarn kora:start` |
-| `NEXT_PUBLIC_TOKEN_MINT` | IncoToken mint on devnet |
-| `NEXT_PUBLIC_PAYMENT_RECEIVER` | Receiver wallet for demo payment |
-| `NEXT_PUBLIC_FACILITATOR_URL` | e.g. `http://localhost:3001` |
-| `FACILITATOR_PORT` | e.g. `3001` |
-| `KORA_RPC_URL` | e.g. `http://localhost:8080/` |
-| `KORA_API_KEY` | e.g. `kora_facilitator_api_key_example` (local) |
+Connect a Solana wallet on devnet (Phantom, Solflare, Backpack), click **Mint 100 USDC** to seed your IncoAccount, then **Authorize** a session and start chatting / pulling.
 
-Optional: `RPC_URL` for facilitator blockhash if Kora is unavailable.
+## Self-hosting (optional)
 
-## Step 3: Run three terminals
-
-From **`my-app`**:
-
-| Terminal | Command | Port |
-|----------|---------|------|
-| 1 | `yarn kora:start` | 8080 |
-| 2 | `yarn facilitator` | 3001 |
-| 3 | `yarn dev` | 3000 |
-
-## Step 4: Try the demo
-
-- **Home:** [http://localhost:3000](http://localhost:3000)
-- **Pay 1 INCO:** [http://localhost:3000/started](http://localhost:3000/started)
-
-Connect a devnet wallet with IncoToken balance, then follow: sign message → sign transaction once → Solscan link when settled.
-
-## Summary
-
-- **Frontend** — Next.js 16, wallet adapter, `/started` flow  
-- **Facilitator** — Express: `/getAmount`, `/verify`, `/settle`  
-- **Kora** — Fee payer + `signAndSendTransaction` with partially signed txs  
+If you want to run the facilitator yourself, see [Hosted Stack](/docs/reference/hosted-stack) for the env vars needed by [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator). It does not depend on Kora — the facilitator's own funded keypair pays the SOL fee for every settle.
 
 ## Next steps
 
-- [Problem](/concepts/problem) — why private, gasless X402 on Solana  
-- [Architecture](/concepts/architecture) — end-to-end flow  
-- [Facilitator API](/reference/facilitator-api) — HTTP endpoints  
+- [Problem](/docs/concepts/problem) — why private, gasless x402 on Solana
+- [Architecture](/docs/concepts/architecture) — end-to-end flow
+- [Hosted Stack](/docs/reference/hosted-stack) — facilitator URL + SDK install
+- [Facilitator API](/docs/reference/facilitator-api) — HTTP endpoints

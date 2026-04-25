@@ -1,53 +1,72 @@
 ---
 title: "Facilitator API"
-description: "HTTP endpoints for ciphertext, verification, and settlement (IncoPay)"
+description: "HTTP endpoints for sessions, single payments, and settlement"
 ---
 
-The **facilitator** is an Express server in **`my-app/app/facilator/server.ts`**. Default base URL: **`http://localhost:3001`**.
+The **facilitator** is an Express server that handles session creation, x402 verification, and on-chain settlement. The hosted instance lives on Railway:
+
+```
+https://inco-facilitator-production.up.railway.app
+```
+
+It pays the SOL fee for every settle from its own funded keypair — no Kora or external paymaster needed. Source: [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator).
 
 ## Base URL
 
-Set **`NEXT_PUBLIC_FACILITATOR_URL`** in the Next.js app (e.g. `http://localhost:3001` for local dev).
+Default in the IncoPay app: `https://inco-facilitator-production.up.railway.app`. To point at a self-hosted instance, set `NEXT_PUBLIC_FACILITATOR_URL` in `.env.local`.
 
 ## Endpoints
 
+### Session-scheme (sign once, settle many)
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/health` | GET | Health check |
-| `/getAmount` | POST | Return **ciphertext** for a priced amount |
-| `/verify` | POST | Verify **Ed25519** signature over the payment message |
-| `/settle` | POST | Build unsigned tx → (after user signs) submit via **Kora** |
-| `/supported` | GET | Advertise supported x402-style payment schemes |
+| `/health` | GET | Liveness + facilitator pubkey + token mint |
+| `/supported` | GET | Advertise x402 v1+v2 `kinds` (scheme: `session`, network: `solana:devnet`) |
+| `/sessions` | POST | Open a new session (the SDK calls this for you) |
+| `/sessions/:id` | GET | Inspect session state (cap, spent, expiration) |
+| `/verify` | POST | Verify a session payment header |
+| `/settle` | POST | Settle a per-call payment against an open session |
 
-## `/getAmount`
+### Single-payment (one-shot x402)
 
-**POST** JSON body typically includes **`amount`** and **`decimals`**.  
-Response includes **`ciphertext`** used in the signed message and settlement payload.
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/pay/getAmount` | POST | Return **ciphertext** for a priced amount |
+| `/pay/verify` | POST | Verify **Ed25519** signature over the payment message |
+| `/pay/settle` | POST | Build unsigned tx → (after user signs) submit on-chain |
 
-## `/verify`
+## Session flow
 
-**POST** body includes x402-style **`paymentPayload`** and **`paymentRequirements`**.  
-The facilitator checks the user’s signature over the message that binds **ciphertext**, amount, and recipient.
+The SDK ([`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions)) drives this:
 
-## `/settle`
+1. Client calls `createSession({ ... })` — opens an on-chain `approve` allowance to the facilitator and POSTs the auth message + signature to `/sessions`.
+2. The facilitator records the session in sqlite and returns a `sessionId`.
+3. Subsequent `session.fetch(...)` calls auto-attach a `PAYMENT-SIGNATURE` header. The resource server forwards to `/settle`.
+4. `/settle` checks the cap, builds an `[Ed25519SigVerify, transfer_with_authorization]` transaction, signs as fee-payer, submits.
 
-**Two-step flow:**
+## Single-payment flow (`/pay/*`)
 
-1. **First request** — Payload includes **authorization** (message, signature, payer, ciphertext, mint, handles, …).  
-   Response may include **`requiresPayerSignature: true`** and **`unsignedTransaction`** (base64).
+A two-step settle for a one-off payment:
 
-2. **Second request** — Client sends **`transaction`** (base64) after the user signs.  
-   Facilitator forwards to **Kora** `signAndSendTransaction` (with `sig_verify: false` for partially signed txs in the IncoPay setup).
+1. **`POST /pay/getAmount`** with `{ amount, decimals }` — returns `{ ciphertext }`.
+2. Client signs an authorization message that binds the ciphertext + recipient.
+3. **`POST /pay/verify`** validates the signature.
+4. **`POST /pay/settle`** (first call) — returns `requiresPayerSignature: true` + `unsignedTransaction` (base64).
+5. User signs the transaction in their wallet.
+6. **`POST /pay/settle`** (second call) with the signed `transaction` — facilitator co-signs as fee-payer and submits.
 
-On success, response includes **`success: true`** and a **transaction** identifier or signature string for Solscan.
+On success, the response includes `success: true` and a transaction signature for Solana Explorer.
 
-## `/supported`
+## Self-hosting
 
-**GET** — Returns supported networks/schemes and fee payer metadata when Kora is reachable.
+Required env for [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator):
 
-## Requirements
+| Variable | Purpose |
+|----------|---------|
+| `FACILITATOR_KEYPAIR` | Inline JSON array `[1,2,...]` or base64 of the 64-byte secret. The facilitator pubkey signs as fee payer. |
+| `TOKEN_MINT` | IncoToken mint pubkey on devnet |
+| `SOLANA_RPC_URL` | optional override; defaults to `https://api.devnet.solana.com` |
+| `PORT` / `FACILITATOR_PORT` | listening port; defaults `4021` |
 
-- **Kora** running at **`KORA_RPC_URL`** (e.g. `http://localhost:8080/`) when settling.  
-- Env: **`KORA_PRIVATE_KEY`**, mint/receiver vars as documented in **`my-app/README.md`**.
-
-For request/response shapes, see **`app/facilator/server.ts`** and **`app/facilator/README.md`** in the repo.
+For request/response shapes, see [`inco-facilitator/src/routes/`](https://github.com/IncoPay/inco-facilitator/tree/main/src/routes) in the repo.
