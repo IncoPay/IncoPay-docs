@@ -23,7 +23,10 @@ const NAV: { group: string; links: { title: string; href: string }[] }[] = [
   },
   {
     group: "Reference",
-    links: [{ title: "Facilitator API", href: "/docs/reference/facilitator-api" }],
+    links: [
+      { title: "Hosted Stack", href: "/docs/reference/hosted-stack" },
+      { title: "Facilitator API", href: "/docs/reference/facilitator-api" },
+    ],
   },
   {
     group: "More",
