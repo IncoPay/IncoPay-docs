@@ -37,7 +37,10 @@
           },
           {
             "group": "Reference",
-            "pages": ["reference/facilitator-api"]
+            "pages": [
+              "reference/hosted-stack",
+              "reference/facilitator-api"
+            ]
           }
         ]
       },
