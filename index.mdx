@@ -24,7 +24,7 @@ On-chain, the flow uses Ed25519 signature verification and the IncoToken program
 
 ## How it works (high level)
 
-1. User connects a Solana wallet and requests a payment (e.g. Pay 1 INCO on `/started`).
+1. User connects a Solana wallet and requests a payment (e.g. **Pay 1 USDC** on `/started`; x402 demos settle in USDC, with IncoToken + Inco Lightning for confidential transfers on the default mint).
 2. **Facilitator** returns **ciphertext** for the amount (`/getAmount`).
 3. User **signs a message** authorizing the payment; facilitator **verifies** the signature (`/verify`).
 4. Facilitator builds an **unsigned** transaction; user **signs the transaction** once.

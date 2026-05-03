@@ -65,6 +65,10 @@
       {
         "label": "GitHub",
         "href": "https://github.com/ayushsingh82/IncoPay"
+      },
+      {
+        "label": "npm",
+        "href": "https://www.npmjs.com/package/solana-x402-sessions"
       }
     ],
     "primary": {

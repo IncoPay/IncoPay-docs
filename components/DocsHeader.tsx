@@ -1,5 +1,6 @@
 "use client";
 
+import { IncoPayLogo } from "./IncoPayLogo";
 import { useTheme } from "./ThemeProvider";
 import Link from "next/link";
 
@@ -10,7 +11,6 @@ type Props = {
 
 export function DocsHeader({ onMenuClick, menuOpen }: Props) {
   const { theme, toggle } = useTheme();
-  const logoSrc = "/logo/logo.png"; // Use absolute path starting with / for Next.js public files
 
   return (
     <header className="sticky top-0 z-50 h-[60px] shrink-0 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-white/10 dark:bg-black/80">
@@ -28,8 +28,9 @@ export function DocsHeader({ onMenuClick, menuOpen }: Props) {
             <span className="block h-0.5 w-[18px] rounded-full bg-current" />
           </button>
           <Link href="/docs" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoSrc} alt="IncoPay" className="h-6 w-auto sm:h-7" />
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2463EB] sm:h-8 sm:w-8">
+              <IncoPayLogo className="h-5 w-5 text-white sm:h-6 sm:w-6" />
+            </span>
             <span className="hidden text-sm font-semibold tracking-tight text-zinc-900 dark:text-white sm:inline-block">
               IncoPay
             </span>

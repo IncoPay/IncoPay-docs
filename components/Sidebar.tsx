@@ -101,6 +101,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 Twitter ↗
               </a>
             </li>
+            <li>
+              <a
+                href="https://www.npmjs.com/package/solana-x402-sessions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-all duration-200 hover:translate-x-0.5 hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+              >
+                npm package ↗
+              </a>
+            </li>
           </ul>
         </div>
       </nav>

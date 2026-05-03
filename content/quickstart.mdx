@@ -27,7 +27,11 @@ yarn dev
 
 That's it. Open [http://localhost:3000](http://localhost:3000).
 
-The app comes pre-wired to the hosted facilitator at `https://inco-facilitator-production.up.railway.app` and the Inco-USDC mint on Solana devnet — no `.env.local` required for the demo path.
+The app comes pre-wired to the hosted facilitator at `https://inco-facilitator-production.up.railway.app` and the default devnet mint on Solana — no `.env.local` required for the demo path.
+
+### Payment asset (x402 & demos)
+
+Session flows, slot, and single-pay routes all price and settle in **USDC** (6 decimals). Transfers use **IncoToken + Inco Lightning** for confidential balances on the default mint. The same x402 stack also supports **standard SPL USDC**: set `NEXT_PUBLIC_TOKEN_MINT` (and match your facilitator’s `TOKEN_MINT`) to the USDC mint you want on devnet.
 
 ## Step 3: Try the demo
 
