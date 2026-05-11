@@ -1,16 +1,21 @@
 ---
 title: "Problem"
-description: "Public payments, gas friction, and the need for confidential amounts on Solana"
+description: "Public amounts, gas friction, and one-popup-per-call ruin pay-per-use UX"
 ---
 
-Most token transfers on Solana are **public**: observers can see who paid whom and often infer amounts. That is a poor fit for **premium content**, **private commerce**, or **X402-style** “pay to unlock” flows where you want **confidentiality** for the payment leg.
+Most token transfers on Solana are **public**: observers can see who paid whom and often infer amounts. That is a poor fit for **premium content**, **private commerce**, or **x402-style** "pay to unlock" flows where you want **confidentiality** for the payment leg.
 
-Users also face **gas friction**: every transaction needs SOL for fees. That hurts onboarding and makes “one-click pay” harder, especially for apps that want a **facilitator-paid** model (merchant or protocol sponsors gas).
+Users also face **gas friction**: every transaction needs SOL for fees. That hurts onboarding and breaks "one-click pay" — especially when the merchant or protocol wants to sponsor gas.
 
-**X402** on the web encodes “payment required” semantics; bringing **private** payments to Solana means combining:
+But there is a third friction that is specific to pay-per-use:
 
-- **Confidential SPL** (encrypted amounts / balances) via Inco Lightning  
-- **Clear authorization** (who agreed to pay what) without leaking cleartext amounts on-chain where the design intends confidentiality  
-- **A fee payer** so the user does not spend SOL for network fees  
+**One signature per call doesn't scale.** Without a session abstraction, every billable API call is a separate wallet popup and a separate signature. Ten chat messages = ten "Approve" prompts. That's fine for a one-shot DEX trade, ruinous for any product that resembles a normal internet app — pay-per-token AI inference, per-request data feeds, in-game microtransactions, streaming.
 
-IncoPay targets this gap: **private X402 on Solana** with Inco Network tooling and Kora as fee payer.
+**x402** on the web encodes "payment required" semantics. Bringing **private, session-based** payments to Solana means combining:
+
+- **Confidential SPL** (encrypted amounts / balances) via Inco Lightning
+- **One-time authorization** (signed cap + expiry) so the user can be offline while the merchant streams charges
+- **A fee payer** so the user never spends SOL
+- **An on-chain allowance** that physically bounds how much the facilitator can spend on the user's behalf, not just a trust contract
+
+IncoPay targets this gap: **private, session-based x402 on Solana** with Inco Network tooling and a facilitator that doubles as the fee payer.

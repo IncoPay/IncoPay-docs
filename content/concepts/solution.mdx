@@ -1,28 +1,38 @@
 ---
 title: "Solution"
-description: "IncoPay: confidential SPL, ciphertext-aware facilitator, and Kora for gasless submission"
+description: "Session scheme: one approve + one auth message → unbounded confidential micropayments"
 ---
 
-IncoPay combines **Inco Lightning** (confidential SPL), an **Express facilitator** that understands **ciphertext** end-to-end, and **Kora** **only** as **fee payer + transaction submission**—not for generating or verifying ciphertext.
+IncoPay combines **Inco Lightning** (confidential SPL via FHE+TEE), an **Express facilitator** that owns session state, and a session-aware x402 scheme published as the [`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions) SDK.
 
 ## What the user experiences
 
-- Connect a Solana wallet (devnet in the demo).  
-- **Pay 1 USDC** (or your configured amount): sign a **message** (authorization including ciphertext metadata), then sign the **transaction** once.  
-- **No gas** from the user: Kora adds the fee-payer signature and submits.  
-- **Confidential transfer path** uses IncoToken + Inco Lightning; amounts stay confidential through the facilitator pipeline until settlement semantics you define.
+- Connect a Solana wallet.
+- Open a session — **two signatures total**: one Ed25519 auth message (signs the canonical session intent) and one transaction (the on-chain `approve` allowance to the facilitator).
+- After that, every paid API call settles silently — no wallet popup, no SOL spend.
+- All amounts on-chain are `Euint128` ciphertexts; observers see opaque handles, not values.
+
+## What the SDK does
+
+The `solana-x402-sessions` package on the client side:
+
+- **`createSession(opts)`** — discovers the facilitator pubkey via `/supported`, builds the IncoToken `approve_checked(encryptedCap)` tx, asks the wallet to sign the auth message + approve tx, and POSTs `/sessions`.
+- **`session.fetch(...)`** — drop-in `fetch` that auto-retries `402` responses with a `PAYMENT-SIGNATURE` header derived from the session id and the resource server's quoted amount.
+- **`SessionIncoScheme`** — optional plugin for `@x402/core` if you're using x402's resource-server framework instead of writing your own `402` handler.
 
 ## What the facilitator does
 
-- **`/getAmount`** — Returns **ciphertext** for the priced amount.  
-- **`/verify`** — Validates the user’s **Ed25519** signature over the payment message (ciphertext, amount, recipient, etc.).  
-- **`/settle`** — **Two steps**: (1) return an **unsigned** transaction for the user to sign; (2) accept the **signed** transaction and forward to **Kora** for fee-payer signature and send.
+- **`/supported`** — Advertises `scheme: "session"`, the asset, the facilitator pubkey, and decimals — both `x402Version: 1` and `x402Version: 2`.
+- **`/sessions` (POST)** — Verifies the Ed25519 auth signature, cross-checks every field of the canonical message against the request body, submits the user-signed `approve` tx, records the session in sqlite, and returns a `sessionId`.
+- **`/sessions/:id` (GET)** — Inspect cap, spent, and expiration.
+- **`/verify`** — Verifies a session payment header without settling (resource-server side).
+- **`/settle`** — Atomically debits sqlite, builds an `IncoToken::transfer(amount_ciphertext)` tx with the right allowance PDAs in `remaining_accounts`, signs as fee payer, and submits. Refunds the sqlite debit on failure.
+- **`/pay/{getAmount,verify,settle}`** — Legacy single-payment x402 (one-shot demos).
 
-## What Kora does (IncoPay scope)
+## On-chain enforcement
 
-- Pays **network fees** and completes **sign-and-send** for partially signed transactions (`sig_verify: false` where configured so the fee payer can sign last).  
-- Must **allowlist** programs used in the tx (Ed25519, Compute Budget, IncoToken, Inco Lightning) — see [Tech stack](/concepts/tech-stack).
+The cap and expiry are not "the facilitator promises not to overspend." They are on-chain:
 
-## On-chain tie-in
-
-**IncoToken** `transfer_with_authorization` checks **Ed25519** verification in the **previous** instruction (relative index), then performs the confidential transfer path (Inco Lightning CPIs per program version).
+- **IncoToken `approve_checked`** writes an allowance PDA derived from `[delegated_amount_handle_le16, spender]`. The cap is the encrypted `Euint128` handle.
+- **`transfer_with_authorization`** invokes **Inco Lightning's** `e_ge` over the encrypted allowance + transfer amount inside a TEE worker (Covalidator). If the cumulative debit exceeds the cap, the CPI fails. The facilitator physically cannot spend past the allowance.
+- The auth message is bound off-chain to the recipient + asset + nonce, so a leaked sessionId can't be redirected to a different merchant.

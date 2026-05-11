@@ -1,49 +1,54 @@
 ---
 title: "Development"
-description: "Preview IncoPay docs locally — Next.js (Vercel) or Mintlify CLI"
+description: "Preview IncoPay docs locally with Mintlify"
 ---
 
 <Info>
-  **Prerequisites**: Node.js 18+ and the `incopay-docs` folder.
+  **Prerequisites**: Node.js 19+ and this `incopay-docs` folder with `docs.json`.
 </Info>
 
-## Preview on Vercel stack (recommended)
+## Preview docs locally
 
-This folder is a **Next.js** site. MDX lives in **`content/`**.
-
-```bash
-cd incopay-docs
-npm install
-npm run dev
-```
-
-Open **http://localhost:3333** — sidebar + same IncoPay pages as production on Vercel.
-
-## Deploy on Vercel
-
-1. Import the Git repo in Vercel.
-2. Set **Root Directory** to **`incopay-docs`**.
-3. Framework: **Next.js** (auto-detected). Build: `npm run build`, Output: default.
-4. Deploy.
-
-Environment variables are optional for static docs.
-
-## Preview with Mintlify (optional)
-
-If you use **`docs.json`** and the Mintlify CLI (e.g. for Mintlify Cloud):
+<Steps>
+  <Step title="Install Mintlify CLI">
 
 ```bash
 npm i -g mint
+```
+
+  </Step>
+  <Step title="Run the dev server">
+
+From the **`incopay-docs`** directory (where `docs.json` lives):
+
+```bash
 cd incopay-docs
 mint dev
 ```
 
-Mintlify reads MDX from the repo paths configured in `docs.json` (not only `content/`). For **Vercel**, the source of truth for routes is **`content/`** + `app/docs/[[...slug]]`.
+Open **http://localhost:3000** to view the docs. MDX changes hot-reload.
 
-## Working on the IncoPay app (`my-app/`)
+  </Step>
+</Steps>
 
-1. Open **`my-app/`** in your editor.
-2. Follow the [Quickstart](/docs/quickstart) for install, `.env`, and running Kora + facilitator + Next.js.
-3. See **`my-app/README.md`** for program IDs and troubleshooting.
+## Custom port
 
-For Mintlify-only features, see [Mintlify documentation](https://mintlify.com/docs).
+```bash
+mint dev --port 3333
+```
+
+## Validate links
+
+```bash
+mint broken-links
+```
+
+## Working on IncoPay itself
+
+These docs describe **IncoPay** (private, session-based x402 on Solana). The code is split across three repos:
+
+1. **Client SDK** — [`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions) on npm. Source at [`IncoPay/solana-x402-sessions`](https://github.com/IncoPay/solana-x402-sessions).
+2. **Facilitator** — [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator). Express server; runs locally with `npm run dev`.
+3. **Demo app** — [`ayushsingh82/IncoPay`](https://github.com/ayushsingh82/IncoPay). Next.js app that consumes the SDK.
+
+For Mintlify theme and navigation, see [Mintlify documentation](https://mintlify.com/docs).

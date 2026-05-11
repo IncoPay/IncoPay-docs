@@ -1,37 +1,48 @@
 ---
 title: "Architecture"
-description: "End-to-end flow: Next.js, facilitator, Kora, IncoToken, Inco Lightning"
+description: "End-to-end session flow: SDK, facilitator, IncoToken, Inco Lightning"
 ---
 
 ## End-to-end flow
 
-1. **Browser (Next.js)** — User opens `/started` (or similar), connects wallet.  
-2. **`POST /getAmount`** — Facilitator returns **ciphertext** for the demo price.  
-3. **Sign message** — Client builds payload (ciphertext, amount, recipient, nonce, …) and calls `signMessage`.  
-4. **`POST /verify`** — Facilitator checks Ed25519 signature and x402-style payload.  
-5. **Simulation / handles** — Client may simulate IncoToken transfer to obtain handles (see app code).  
-6. **`POST /settle` (step 1)** — Facilitator returns **`requiresPayerSignature: true`** and **`unsignedTransaction`** (base64).  
-7. **Sign transaction** — User signs once; client serializes with **`requireAllSignatures: false`** / **`verifySignatures: false`** (fee payer not signed yet).  
-8. **`POST /settle` (step 2)** — Client sends signed tx; facilitator calls **Kora** `signAndSendTransaction`.  
-9. **Kora** — Adds fee-payer signature, submits to Solana; client shows **Solscan** link.
+### Session creation (one-time)
+
+1. **Browser (SDK)** — `createSession({ cap, expirationSeconds, ... })` is called.
+2. **`GET /supported`** — SDK reads the facilitator pubkey (`spender`) and asset metadata.
+3. **Simulate `approve_checked`** — SDK builds a bare `IncoToken::approve_checked(encryptedCap)` instruction and simulates it to extract the `delegated_amount` handle from the user's IncoAccount, then derives the allowance PDA = `[handle_le16, facilitator_pubkey]`.
+4. **Sign message** — User signs the canonical session JSON `{user, spender, asset, recipient, cap, expirationUnix, network, nonce}` with `signMessage`.
+5. **Sign transaction** — User signs the final `approve_checked` tx (with allowance PDA in `remaining_accounts`) with `signTransaction`. The facilitator is the `feePayer` — user pays no SOL.
+6. **`POST /sessions`** — SDK posts `{ approveTxBase64, authMessage, authSignature, ... }`. Facilitator verifies the Ed25519 signature, cross-checks every field, submits the approve tx (acting as fee payer), and inserts a sqlite row.
+
+### Per-call settlement
+
+7. **`session.fetch("/api/whatever")`** — wraps `fetch`; first call gets `402` with `PAYMENT-REQUIRED`.
+8. **Retry with `PAYMENT-SIGNATURE`** — SDK base64-encodes `{ sessionId, amount, accepted, resource, x402Version }` and re-sends the request.
+9. **Resource server forwards** the header to **`POST /settle`**.
+10. **Facilitator** — debits sqlite atomically (`spent + amount ≤ cap`, not expired), builds an `IncoToken::transfer(amount_ciphertext)` tx (creating the recipient ATA if missing), simulates to get fresh source + dest amount handles, derives both decrypt-allowance PDAs, then signs as fee payer and submits.
+11. **On-chain** — IncoToken CPIs into Inco Lightning; the Covalidator (Inco's TEE) performs `recipient.amount += amount` and `user.amount -= amount` over encrypted `Euint128` handles, signs the result, and writes new handles back.
+12. **Response** — `{ success: true, transaction: <signature>, extensions.session: { spent, remaining } }`. Resource server returns the real handler response with a `PAYMENT-RESPONSE` header.
 
 ## Components
 
 | Layer | Role |
 |-------|------|
-| **Next.js app** | UI, wallet adapter, calls facilitator + builds/signed txs |
-| **Facilitator (Express)** | Ciphertext, verify, build unsigned tx, proxy to Kora |
-| **Kora** | Fee payer RPC, partially signed tx handling |
-| **IncoToken (Anchor)** | `transfer_with_authorization`, Ed25519 relative index |
-| **Inco Lightning** | Confidential SPL / FHE CPIs from IncoToken |
+| **Client SDK** (`solana-x402-sessions`) | `createSession`, `wrapFetch`, resource-server scheme plugin |
+| **Facilitator (Express)** | `/sessions`, `/verify`, `/settle`, `/supported`, `/pay/*`. Session state in sqlite. Fee payer for every submitted tx. |
+| **IncoToken (Anchor)** | `approve_checked`, `transfer_with_authorization`, ATA management, Ed25519-bound auth path |
+| **Inco Lightning + Covalidator** | FHE ciphertext arithmetic in a TEE; produces signed updates to encrypted balance handles |
 
-## Devnet program IDs (reference)
+## Devnet program IDs
 
-Use these in Kora **`allowed_programs`** (or equivalent):
+| Program | Address | Job |
+|---|---|---|
+| **IncoToken** | `9Cir3JKBcQ1mzasrQNKWMiGVZvYu3dxvfkGeQ6mohWWi` | Anchor program. Owns `IncoMint` + `IncoAccount` PDAs. Same surface as SPL Token, but balances are FHE ciphertexts (`Euint128`). |
+| **Inco Lightning** | `5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj` | FHE runtime. IncoToken CPIs into Lightning for `e_add`, `e_sub`, `e_ge`, etc. on encrypted handles. Covalidator processes ciphertext arithmetic in a TEE. |
+| **Ed25519 SigVerify** | `Ed25519SigVerify111111111111111111111111111` | Native — used for message-bound authorization paths. |
+| **Compute Budget** | `ComputeBudget111111111111111111111111111111` | Native — prepended for compute budget. |
 
-- `ComputeBudget111111111111111111111111111111` — Compute Budget  
-- `9Cir3JKBcQ1mzasrQNKWMiGVZvYu3dxvfkGeQ6mohWWi` — IncoToken  
-- `5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj` — Inco Lightning  
-- `Ed25519SigVerify111111111111111111111111111` — Ed25519 verify  
+## Trust model recap
 
-See `my-app/README.md` in the repo for the full table and troubleshooting.
+- **On-chain enforced** by IncoToken `approve` allowance PDA: total cap and expiry. `transfer_with_authorization` checks `e_ge(allowance, amount)` via Inco Lightning before debiting.
+- **Off-chain enforced** by the facilitator: per-call amount, recipient binding, session bookkeeping. The atomic sqlite debit + refund-on-failure keeps the in-flight cap consistent across crashes.
+- **Privacy**: amounts and balances are `Euint128` ciphertext handles on chain — only the holder of the relevant allowance PDA can ask the Covalidator to decrypt.

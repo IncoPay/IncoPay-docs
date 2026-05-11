@@ -1,54 +1,147 @@
 ---
 title: "Quickstart"
-description: "Run IncoPay locally against the hosted facilitator and the published SDK"
+description: "Install the SDK, open a session against the hosted facilitator, and start charging per call"
 ---
 
-The fastest path: clone IncoPay, install, and run the Next.js app. The hosted facilitator is already live on Railway and the SDK is on npm — you don't run Kora, the facilitator, or any infra locally.
+The fastest path is the **hosted facilitator** + the **published SDK** — no Kora, no Anchor build, no env config.
 
-## Prerequisites
-
-- **Node.js** 18+ and **Yarn** (or npm)
-
-## Step 1: Clone and install
+## 1. Install the SDK
 
 ```bash
-git clone https://github.com/IncoPay/IncoPay
-cd IncoPay
-yarn install
+npm install solana-x402-sessions @solana/web3.js
 ```
 
-The published [`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions) SDK installs as a regular dependency.
+Peers used by `createSession`: `@coral-xyz/anchor` and `@inco/solana-sdk` (`solana-x402-sessions/scheme` is only needed if you plug into `@x402/core`).
 
-## Step 2: Run the app
+## 2. Open a session
 
-```bash
-yarn dev
+```ts
+import { createSession, type ClientSvmSigner } from "solana-x402-sessions";
+import { Transaction } from "@solana/web3.js";
+import { useWallet } from "@solana/wallet-adapter-react";
+
+const FACILITATOR_URL = "https://inco-facilitator-production.up.railway.app";
+const TOKEN_MINT      = "7crFMbJN7hxVhUPNcRRxTGr9nD3TnvpZ8pNZepA19wuB"; // Inco-issued USDC, 6 decimals
+const RECIPIENT       = "55LEmvuVgujxEvbrYBiDXBZmMxu3dMofVvT6uCq4q2xK"; // facilitator pubkey (also merchant in demo)
+
+function MyChat() {
+  const { publicKey, signMessage, signTransaction } = useWallet();
+
+  async function openSession() {
+    if (!publicKey || !signMessage || !signTransaction) return;
+
+    const signer: ClientSvmSigner = {
+      publicKey: publicKey.toBase58(),
+      signMessage: async (msg) => signMessage(msg),
+      signTransaction: async (txB64) => {
+        const tx = Transaction.from(Buffer.from(txB64, "base64"));
+        const signed = await signTransaction(tx);
+        return (signed as Transaction)
+          .serialize({ requireAllSignatures: false, verifySignatures: false })
+          .toString("base64");
+      },
+    };
+
+    const session = await createSession({
+      facilitatorUrl: FACILITATOR_URL,
+      network: "solana:devnet",
+      asset: TOKEN_MINT,
+      recipient: RECIPIENT,
+      cap: "1",                  // 1 USDC total spending cap for this session
+      expirationSeconds: 3600,   // session lives 1 hour
+      signer,
+    });
+
+    // From here on: every 402 from the resource server is auto-retried with a
+    // payment header derived from the session — no extra wallet popup.
+    const res = await session.fetch("/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: "hello" }),
+    });
+    console.log(await res.json());
+  }
+}
 ```
 
-That's it. Open [http://localhost:3000](http://localhost:3000).
+The user sees **two** wallet prompts during `createSession` (one `signMessage`, one `signTransaction`). After that, `session.fetch(...)` is silent.
 
-The app comes pre-wired to the hosted facilitator at `https://inco-facilitator-production.up.railway.app` and the default devnet mint on Solana — no `.env.local` required for the demo path.
+## 3. Charge per call from your API
 
-### Payment asset (x402 & demos)
+Return a `402` with a `PAYMENT-REQUIRED` header. The SDK auto-retries with `PAYMENT-SIGNATURE`; you forward it to the facilitator's `/settle`.
 
-Session flows, slot, and single-pay routes all price and settle in **USDC** (6 decimals). Transfers use **IncoToken + Inco Lightning** for confidential balances on the default mint. The same x402 stack also supports **standard SPL USDC**: set `NEXT_PUBLIC_TOKEN_MINT` (and match your facilitator’s `TOKEN_MINT`) to the USDC mint you want on devnet.
+```ts
+// app/api/chat/route.ts (Next.js App Router)
+import { NextRequest, NextResponse } from "next/server";
 
-## Step 3: Try the demo
+const FACILITATOR_URL = "https://inco-facilitator-production.up.railway.app";
 
-- **Home** — [http://localhost:3000](http://localhost:3000)
-- **Sessions chat** (sign-once, settle 0.5 USDC per message) — [http://localhost:3000/sessions](http://localhost:3000/sessions)
-- **Slot** (sign-once, settle 0.10 USDC per pull) — [http://localhost:3000/slot](http://localhost:3000/slot)
-- **Single payment** (Pay 1 USDC) — [http://localhost:3000/started](http://localhost:3000/started)
+export async function POST(req: NextRequest) {
+  const sigHeader = req.headers.get("PAYMENT-SIGNATURE");
+  if (!sigHeader) {
+    const accepts = [{
+      scheme: "session",
+      network: "solana:devnet",
+      asset: "7crFMbJN7hxVhUPNcRRxTGr9nD3TnvpZ8pNZepA19wuB",
+      amount: "500000",  // 0.5 USDC (6 decimals)
+      payTo: "55LEmvuVgujxEvbrYBiDXBZmMxu3dMofVvT6uCq4q2xK",
+      maxTimeoutSeconds: 60,
+      extra: { facilitatorUrl: FACILITATOR_URL, per: "message" },
+    }];
+    return new NextResponse(JSON.stringify({ x402Version: 2, accepts }), {
+      status: 402,
+      headers: {
+        "content-type": "application/json",
+        "PAYMENT-REQUIRED": Buffer.from(JSON.stringify({ x402Version: 2, accepts })).toString("base64"),
+      },
+    });
+  }
 
-Connect a Solana wallet on devnet (Phantom, Solflare, Backpack), click **Mint 100 USDC** to seed your IncoAccount, then **Authorize** a session and start chatting / pulling.
+  const payload = JSON.parse(Buffer.from(sigHeader, "base64").toString());
+  const settle = await fetch(`${FACILITATOR_URL}/settle`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      paymentPayload: payload,
+      paymentRequirements: payload.accepted,
+    }),
+  }).then((r) => r.json());
+
+  if (!settle.success) {
+    return new NextResponse(JSON.stringify({ error: "settle_failed", details: settle }), {
+      status: 402,
+      headers: {
+        "PAYMENT-RESPONSE": Buffer.from(JSON.stringify(settle)).toString("base64"),
+      },
+    });
+  }
+
+  // … your real handler
+  return NextResponse.json({ reply: "you paid 0.5 USDC ✓" });
+}
+```
+
+## 4. Persist the session
+
+`session.fetch` is `wrapFetch(sessionId, facilitatorUrl)`. Persist `sessionId` in localStorage / cookies so a page reload doesn't force another `createSession`:
+
+```ts
+import { wrapFetch } from "solana-x402-sessions";
+
+const fetch = wrapFetch(savedSessionId, FACILITATOR_URL);
+await fetch("/api/chat", { method: "POST", body: ... });
+```
+
+Sessions are bound to `{ user, spender, asset, recipient, cap, expirationUnix }` — they expire on the timestamp or when the cap is fully spent.
 
 ## Self-hosting (optional)
 
-If you want to run the facilitator yourself, see [Hosted Stack](/docs/reference/hosted-stack) for the env vars needed by [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator). It does not depend on Kora — the facilitator's own funded keypair pays the SOL fee for every settle.
+If you want to run your own facilitator, see [Hosted stack → Self-hosting](/reference/hosted-stack#self-hosting). The repo lives at [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator); required env is `FACILITATOR_KEYPAIR`, `TOKEN_MINT`, and optionally `SOLANA_RPC_URL`.
+
+For the full app demo (Next.js + facilitator + one-shot `/pay/*` flow), clone [`ayushsingh82/IncoPay`](https://github.com/ayushsingh82/IncoPay) — see its `README.md` for env and scripts.
 
 ## Next steps
 
-- [Problem](/docs/concepts/problem) — why private, gasless x402 on Solana
-- [Architecture](/docs/concepts/architecture) — end-to-end flow
-- [Hosted Stack](/docs/reference/hosted-stack) — facilitator URL + SDK install
-- [Facilitator API](/docs/reference/facilitator-api) — HTTP endpoints
+- [Hosted stack](/reference/hosted-stack) — live URL, devnet config, no setup
+- [Architecture](/concepts/architecture) — end-to-end session flow
+- [Facilitator API](/reference/facilitator-api) — `/sessions`, `/verify`, `/settle`, `/pay/*`

@@ -1,42 +1,61 @@
 ---
 title: "Deployment"
-description: "How to run IncoPay: local full stack, UI-only on Vercel, and facilitator elsewhere"
+description: "Hosted facilitator vs self-hosted: how to ship IncoPay sessions"
 ---
 
-IncoPay is **open source**—there are no product “tiers” in the app repo. This page describes **how you deploy** the pieces.
+IncoPay is **open source** — no product tiers. This page covers **how you deploy** the pieces.
 
-## Local full stack (recommended for demos)
+## Hosted facilitator (recommended)
 
-Run everything on your machine:
+A reference facilitator runs on Solana devnet — no infrastructure required:
 
-- **Kora** — `yarn kora:start` (port 8080)  
-- **Facilitator** — `yarn facilitator` (port 3001)  
-- **Next.js** — `yarn dev` (port 3000)  
+```
+https://inco-facilitator-production.up.railway.app
+```
 
-You need a built **`@solana/kora`** SDK when using the local `file:../kora/sdks/ts` workflow (see `my-app/README.md`).
+Point the SDK at this URL and you're done. The facilitator pays SOL fees on every settle from its own funded keypair, so end users are gasless. See [Hosted stack](/reference/hosted-stack) for the full config table.
 
-**Best for:** hacking, end-to-end **Pay 1 USDC** on devnet, testing Kora allowlists and IncoToken.
+**Best for:** demos, hackathons, AI-pay-per-call apps, anything where you don't want to run a paymaster.
 
-## Vercel (UI only)
+## Self-hosted facilitator
 
-The **`my-app`** build is set up so **Vercel can deploy the Next.js UI** without the Kora repo on the build machine: **`@solana/kora`** is not installed from a missing `file:` path; a **type stub** satisfies the TypeScript build.
+Run [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator) yourself when you need:
 
-**Best for:** public landing + wallet UI.  
-**Note:** The **facilitator** must run **elsewhere** (another host, Railway, Fly, etc.) and `NEXT_PUBLIC_FACILITATOR_URL` must point to it.
+- A funded keypair under your control
+- A different IncoToken mint / merchant pubkey
+- Mainnet (when supported)
+- Custom rate-limiting, logging, or cap policies
 
-## Facilitator + Kora on a server
+```bash
+git clone https://github.com/IncoPay/inco-facilitator
+cd inco-facilitator && npm install && npm run build
+FACILITATOR_KEYPAIR='[1,2,...]' \
+TOKEN_MINT=7crFMbJN7hxVhUPNcRRxTGr9nD3TnvpZ8pNZepA19wuB \
+SOLANA_RPC_URL=https://api.devnet.solana.com \
+npm start
+```
 
-For production-like setups:
+Required env:
 
-- Run **Kora** and the **facilitator** on a server (or two) with proper **secrets** (`KORA_PRIVATE_KEY`, API keys).  
-- Point the frontend’s **`NEXT_PUBLIC_FACILITATOR_URL`** at your facilitator URL.  
-- Lock down CORS and rate limits as needed.
+| Variable | Purpose |
+|----------|---------|
+| `FACILITATOR_KEYPAIR` | Inline JSON array `[1,2,...]` or base64 of the 64-byte secret. This pubkey signs as fee payer and as the `spender` on the on-chain `approve` allowance. |
+| `TOKEN_MINT` | IncoToken mint pubkey on the target network |
+| `SOLANA_RPC_URL` | RPC URL — defaults to `https://api.devnet.solana.com` |
+| `PORT` / `FACILITATOR_PORT` | Listening port — defaults to `4021` (Railway/Render/Fly auto-set `PORT`) |
 
-## Open source
+The facilitator stores session state in a local sqlite file (`DB_PATH`, default `./sessions.db`). On a multi-instance deploy, mount this on a shared volume or front it with a serializing proxy.
 
-- **IncoPay** — app and docs in the monorepo  
-- **IncoPay-KoraFacilator** — Kora/facilitator fork for IncoPay-specific changes  
+**Best for:** production deploys, custom merchants, anyone who can't trust a third-party paymaster.
+
+## Frontend deploy
+
+The IncoPay demo Next.js app at [`ayushsingh82/IncoPay`](https://github.com/ayushsingh82/IncoPay) deploys cleanly to **Vercel** — only the `solana-x402-sessions` SDK and a wallet adapter are needed on the client. Point `NEXT_PUBLIC_FACILITATOR_URL` at either the hosted facilitator or your own deploy and you're done.
+
+## Kora (legacy)
+
+Earlier versions of IncoPay used **Kora** as a separate paymaster service. The current architecture folds fee-payer responsibility into the facilitator itself, so **Kora is no longer required**. The `/pay/*` single-payment legacy endpoints can still proxy to Kora if `KORA_RPC_URL` is set, but the session scheme (the recommended path) does not need it.
 
 <Note>
-  For detailed env vars and scripts, use the [Quickstart](/quickstart) and `my-app/README.md`.
+  For env vars and run scripts, see the [Quickstart](/quickstart) and the repo READMEs at [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator) and [`ayushsingh82/IncoPay`](https://github.com/ayushsingh82/IncoPay).
 </Note>

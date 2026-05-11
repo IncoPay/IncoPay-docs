@@ -45,6 +45,73 @@ The SDK ([`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sess
 3. Subsequent `session.fetch(...)` calls auto-attach a `PAYMENT-SIGNATURE` header. The resource server forwards to `/settle`.
 4. `/settle` checks the cap, builds an `[Ed25519SigVerify, transfer_with_authorization]` transaction, signs as fee-payer, submits.
 
+### `POST /sessions`
+
+Request body (all fields required):
+
+```json
+{
+  "user": "<base58 user pubkey>",
+  "asset": "<base58 IncoToken mint>",
+  "recipient": "<base58 merchant pubkey>",
+  "cap": "1000000",
+  "expirationUnix": 1717174800,
+  "network": "solana:devnet",
+  "approveTxBase64": "<base64 of partially-signed approve_checked tx>",
+  "authMessage": "<base64 of canonical JSON intent>",
+  "authSignature": "<base64 Ed25519 signature over the decoded authMessage>"
+}
+```
+
+The canonical JSON intent (signed by the user) is `{user, spender, asset, recipient, cap, expirationUnix, network, nonce}`. The facilitator cross-checks every field against the request body and rejects on any mismatch.
+
+Response (`201`):
+
+```json
+{
+  "sessionId": "uuid-v4",
+  "user": "...",
+  "spender": "<facilitator pubkey>",
+  "asset": "...",
+  "recipient": "...",
+  "cap": "1000000",
+  "spent": "0",
+  "expirationUnix": 1717174800,
+  "network": "solana:devnet",
+  "approveTxSignature": "<signature of the on-chain approve tx>"
+}
+```
+
+### `POST /settle`
+
+Request body:
+
+```json
+{
+  "paymentPayload": {
+    "x402Version": 2,
+    "accepted": { "scheme": "session", "network": "solana:devnet", "asset": "...", "amount": "500000", "payTo": "...", ... },
+    "payload": { "sessionId": "uuid-v4", "amount": "500000" },
+    "resource": { "url": "https://your-api.example/chat" }
+  },
+  "paymentRequirements": { /* same shape as accepted above */ }
+}
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "transaction": "<solana signature>",
+  "network": "solana:devnet",
+  "payer": "<user pubkey>",
+  "extensions": { "session": { "id": "...", "spent": "500000", "remaining": "500000" } }
+}
+```
+
+Failure responses surface `errorReason` of `session_not_found`, `session_expired`, `cap_exceeded`, `simulation_failed`, or `onchain_transfer_failed`.
+
 ## Single-payment flow (`/pay/*`)
 
 A two-step settle for a one-off payment:

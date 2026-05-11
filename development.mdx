@@ -43,12 +43,12 @@ mint dev --port 3333
 mint broken-links
 ```
 
-## Working on the IncoPay app (`my-app/`)
+## Working on IncoPay itself
 
-These docs describe **IncoPay** (private X402 on Solana). The application code lives in **`my-app/`** next to this folder in the monorepo:
+These docs describe **IncoPay** (private, session-based x402 on Solana). The code is split across three repos:
 
-1. Open **`my-app/`** in your editor.
-2. Follow the [Quickstart](/quickstart) for install, `.env`, and running Kora + facilitator + Next.js.
-3. See the main repo **README** in `my-app/README.md` for program IDs, troubleshooting, and Vercel UI-only deploy notes.
+1. **Client SDK** — [`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions) on npm. Source at [`IncoPay/solana-x402-sessions`](https://github.com/IncoPay/solana-x402-sessions).
+2. **Facilitator** — [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator). Express server; runs locally with `npm run dev`.
+3. **Demo app** — [`ayushsingh82/IncoPay`](https://github.com/ayushsingh82/IncoPay). Next.js app that consumes the SDK.
 
 For Mintlify theme and navigation, see [Mintlify documentation](https://mintlify.com/docs).

@@ -1,33 +1,47 @@
 ---
 title: "Tech stack"
-description: "Libraries and services used by IncoPay (my-app)"
+description: "Libraries and services used by IncoPay"
 ---
 
-## Frontend
+## Client SDK
 
-- **Next.js 16** (React 19)  
-- **Solana Wallet Adapter** (`@solana/wallet-adapter-*`)  
-- **Anchor** (`@coral-xyz/anchor`) for IDL-driven program calls  
-- **`@inco/solana-sdk`** — encryption / utilities used in the flow  
-- **`@x402/core`**, **`@x402/svm`** — X402 payment semantics  
+[`solana-x402-sessions`](https://www.npmjs.com/package/solana-x402-sessions) on npm.
+
+- **`@solana/web3.js`** — `Transaction`, `Connection`, `PublicKey`
+- **`@coral-xyz/anchor`** — IDL-driven IncoToken instruction encoders (peer)
+- **`@inco/solana-sdk`** — `encryptValue` for the encrypted cap; `attested-decrypt` helpers if you decrypt balances client-side (peer; ESM, dynamically imported)
+- **`solana-x402-sessions/scheme`** — Optional `SessionIncoScheme` plugin for `@x402/core` resource-server framework
+
+## Frontend (demo app)
+
+The IncoPay demo at [`ayushsingh82/IncoPay`](https://github.com/ayushsingh82/IncoPay):
+
+- **Next.js 16** (React 19)
+- **Solana Wallet Adapter** (`@solana/wallet-adapter-*`) — Phantom, Solflare, any Standard Wallet
+- **`solana-x402-sessions`** — session creation + `wrapFetch`
+- **`@x402/core` / `@x402/svm`** — optional, only if using the framework path
 
 ## Facilitator
 
-- **Express** — HTTP API (`/getAmount`, `/verify`, `/settle`, `/supported`, `/health`)  
-- **`@solana/kora`** — Kora client (local SDK path when developing with sibling `kora` repo; see README for Vercel UI-only builds)  
-- **`@solana/web3.js`**, **Anchor** — Transaction building and program interaction  
+[`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator) — Express server.
+
+- **Express** — HTTP API (`/sessions`, `/verify`, `/settle`, `/supported`, `/health`, `/pay/*`)
+- **`better-sqlite3`** — session state (id, user, spender, asset, recipient, cap, spent, expirationUnix, …)
+- **`@coral-xyz/anchor` + `@solana/web3.js`** — building IncoToken instructions and submitting txs
+- **`@inco/solana-sdk`** — `encryptValue` server-side for per-call amount ciphertexts
+- **`tweetnacl`** — Ed25519 verify of the auth message
+- **`uuid`** — session ids
+
+The facilitator's own keypair (`FACILITATOR_KEYPAIR`) signs as fee payer on every transaction it submits — no separate paymaster service required.
 
 ## On-chain (devnet)
 
-- **IncoToken** — Anchor program (confidential SPL-style transfer with authorization)  
-- **Inco Lightning** — External program + `inco-lightning` Rust crate (CPI from IncoToken)  
-
-## Fee payer
-
-- **Kora** — Rust service + TypeScript SDK; sign-and-send with allowlisted programs and `sig_verify: false` for partially signed txs (IncoPay fork behavior)
+- **IncoToken** — Anchor program (confidential SPL with `approve` + `transfer_with_authorization`)
+- **Inco Lightning** — External program + `inco-lightning` Rust crate (CPI from IncoToken). Covalidator (Inco's TEE worker) performs the actual FHE arithmetic.
 
 ## Related repositories
 
-- **IncoPay app:** [github.com/ayushsingh82/IncoPay](https://github.com/ayushsingh82/IncoPay)  
-- **Kora + facilitator fork:** [github.com/ayushsingh82/IncoPay-KoraFacilator](https://github.com/ayushsingh82/IncoPay-KoraFacilator)  
-- **Inco Network:** [inco.org](https://inco.org)  
+- **Client SDK:** [`solana-x402-sessions` on npm](https://www.npmjs.com/package/solana-x402-sessions)
+- **Facilitator:** [`IncoPay/inco-facilitator`](https://github.com/IncoPay/inco-facilitator)
+- **IncoPay demo app:** [github.com/ayushsingh82/IncoPay](https://github.com/ayushsingh82/IncoPay)
+- **Inco Network:** [inco.org](https://inco.org) — Inco Lightning [docs](https://docs.inco.org/svm/home)
